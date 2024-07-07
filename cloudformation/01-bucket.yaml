@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  LambdaCodeBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub 'gitleaks-lambda-code-${AWS::AccountId}-${AWS::Region}'
+Outputs:
+  BucketName:
+    Description: 'The name of the S3 bucket created for Lambda code'
+    Value: !Ref LambdaCodeBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'

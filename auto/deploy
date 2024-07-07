@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -xeuo pipefail
+
+cd "$(dirname "$0")"/..
+
+auto/stackup gitleaks-code-bucket-stack up \
+    --template cloudformation/01-bucket.yaml
+
+bucket="$(auto/stackup gitleaks-code-bucket-stack outputs | jq -r '.BucketName')"
+
+if [[ ! -s "dist/gitleaks.zip" ]]; then
+    auto/package
+fi
+
+# Create new file for each version to work around Lambda code not refreshing
+shorthash=$(sha256sum dist/gitleaks.zip | head -c8)
+aws s3 rm --recursive "s3://${bucket}/"
+aws s3 cp dist/gitleaks.zip "s3://${bucket}/gitleaks-${shorthash}.zip"
+
+auto/stackup gitleaks-lambda-stack up \
+    --template cloudformation/02-lambda.yaml \
+    --override "BucketName=${bucket}" \
+    --override "ZipName=gitleaks-${shorthash}.zip" \
+    --capability CAPABILITY_IAM

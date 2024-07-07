@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")"/..
+
+# Use a Docker image to get layer caching
+docker build -t open-house:builder .
+docker run -it --rm \
+    --volume "$(pwd):/app" \
+    open-house:builder \
+    'rm -rf /app/dist && mkdir /app/dist && zip -r9 /app/dist/gitleaks.zip *'
