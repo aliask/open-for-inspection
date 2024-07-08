@@ -1,0 +1,11 @@
+#!/bin/bash
+
+lambda_arn="$(auto/stackup gitleaks-lambda-stack outputs | jq -r '.LambdaFunctionArn')"
+
+aws lambda invoke \
+    --function-name "${lambda_arn}" \
+    --invocation-type Event \
+    --no-cli-pager \
+    --cli-binary-format raw-in-base64-out \
+    --payload "{ \"repo_url\": \"$1\" }" \
+    response.json
