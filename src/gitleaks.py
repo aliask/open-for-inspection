@@ -41,6 +41,19 @@ def run_gitleaks(clone_dir: str, report_path: str) -> str:
     return result.stderr
 
 
+def transform_report(report_path, repo_url):
+    with open(report_path, "r") as file:
+        data = json.load(file)
+    if not isinstance(data, list):
+        raise ValueError("Report should be an array of results")
+    for obj in data:
+        if not isinstance(obj, dict):
+            raise ValueError("Report should be an array of results")
+        obj["Repository"] = repo_url
+    with open(report_path, "w") as file:
+        json.dump(data, file, indent=4)
+
+
 def checkout_and_scan(repo_url: str, report_path: str) -> str:
     clone_dir = tempfile.mkdtemp()
     results = ""
@@ -49,6 +62,7 @@ def checkout_and_scan(repo_url: str, report_path: str) -> str:
         Repo.clone_from(repo_url, clone_dir)
         logger.info(f"Repository cloned to {clone_dir}")
         results = run_gitleaks(clone_dir, report_path=report_path)
+        transform_report(report_path=report_path, repo_url=repo_url)
     finally:
         shutil.rmtree(clone_dir)
     return results
@@ -87,6 +101,8 @@ if __name__ == "__main__":
 
     if args.output:
         out_file = args.output
+        out_dir = Path(out_file).parent
+        out_dir.mkdir(parents=True, exist_ok=True)
     else:
         datestamp = datetime.now().date().isoformat()
         out_dir = Path(f"results/{datestamp}").absolute().resolve()
